@@ -2,6 +2,8 @@ import type { App } from "@slack/bolt";
 import { log } from "../logging/logger.js";
 import { extractGitHubContext } from "../agent/context-extractor.js";
 import { github } from "../integrations/github.js";
+import { compressLogs } from "../agent/log-compressor.js";
+import { anthropic } from "../integrations/anthropic.js";
 
 const logger = log.child({ name: "mentions" });
 
@@ -26,14 +28,10 @@ export const registerMentionHandler = (app: App): void => {
         text: "I couldn't find a GitHub Actions run URL in this thread. Paste the run URL (e.g. `github.com/org/repo/actions/runs/123`) and I'll diagnose it.",
         thread_ts: threadTs,
       });
-
       return;
     }
 
-    logger.debug(
-      { run_url: context.run_url, owner: context.owner, repo: context.repo },
-      "github context extracted",
-    );
+    logger.debug({ run_url: context.run_url, owner: context.owner, repo: context.repo }, "github context extracted");
 
     const logsResult = await github.fetchJobLogs(context);
     if (!logsResult.ok) {
@@ -41,12 +39,30 @@ export const registerMentionHandler = (app: App): void => {
         text: "Found the run but couldn't fetch logs from GitHub. Check that the run is complete and the repo is accessible.",
         thread_ts: threadTs,
       });
-
       return;
     }
 
+    const compressed = compressLogs(logsResult.value);
+    logger.debug({ raw_chars: logsResult.value.length, compressed_chars: compressed.length }, "logs compressed");
+
+    const diagnosisResult = await anthropic.diagnose(context, compressed);
+    if (!diagnosisResult.ok) {
+      await say({
+        text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",
+        thread_ts: threadTs,
+      });
+      return;
+    }
+
+    const { summary, root_cause, fix_suggestion, confidence } = diagnosisResult.value;
+
     await say({
-      text: `Fetched ${logsResult.value.length} chars of logs from <${context.run_url}|Run #${context.run_id}>.\n\`\`\`\n${logsResult.value.slice(0, 500)}\n\`\`\``,
+      text: [
+        `*${summary}*`,
+        `*Root cause:* ${root_cause}`,
+        `*Fix:* ${fix_suggestion}`,
+        `_Confidence: ${confidence}_`,
+      ].join("\n"),
       thread_ts: threadTs,
     });
   });
