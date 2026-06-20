@@ -6,4 +6,8 @@ const packageJsonSchema = z.object({
   version: z.string(),
 });
 
-export const packageJson = resolveWithSchema('Package.json', () => JSON.parse(readFileSync('package.json').toString()), packageJsonSchema);
+export const packageJson = resolveWithSchema(
+  "Package.json",
+  () => JSON.parse(readFileSync("package.json").toString()),
+  packageJsonSchema,
+);

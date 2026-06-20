@@ -36,4 +36,4 @@ export function extractGitHubContext(text: string): GitHubRunContext | null {
     commit_sha: text.match(COMMIT_RE)?.[1] ?? null,
     run_url: `https://github.com/${owner}/${repo}/actions/runs/${run_id}`,
   };
-};
+}

@@ -17,4 +17,4 @@ const environmentSchema = z.object({
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
 });
 
-export const env = resolveWithSchema('Environment', () => process.env, environmentSchema);
+export const env = resolveWithSchema("Environment", () => process.env, environmentSchema);

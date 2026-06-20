@@ -29,7 +29,10 @@ export const registerMentionHandler = (app: App): void => {
       return;
     }
 
-    logger.debug({ run_url: context.run_url, owner: context.owner, repo: context.repo }, "GitHub context extracted");
+    logger.debug(
+      { run_url: context.run_url, owner: context.owner, repo: context.repo },
+      "GitHub context extracted",
+    );
 
     await say({
       text: `Found run: *${context.owner}/${context.repo}* — <${context.run_url}|Run #${context.run_id}>${context.branch ? ` on \`${context.branch}\`` : ""}`,
