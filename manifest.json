@@ -9,11 +9,8 @@
     "background_color": "#a0522d"
   },
   "features": {
-    "bot_user": {
-      "display_name": "diglett",
-      "always_online": true
-    },
-    "assistant": {
+    "assistant_view": {
+      "assistant_description": "CI failure diagnosis inside your thread",
       "suggested_prompts": [
         {
           "title": "Why did my last build fail?",
@@ -28,6 +25,10 @@
           "message": "How many times has this workflow failed in the past week?"
         }
       ]
+    },
+    "bot_user": {
+      "display_name": "diglett",
+      "always_online": true
     }
   },
   "oauth_config": {
@@ -40,8 +41,7 @@
         "chat:write",
         "im:history",
         "im:read",
-        "im:write",
-        "search:read"
+        "im:write"
       ]
     }
   },
