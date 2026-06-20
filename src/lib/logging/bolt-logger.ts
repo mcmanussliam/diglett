@@ -12,6 +12,21 @@ export const PINO_TO_BOLT_LOG_LEVEL_MAPPING: Record<PinoLogLevel, BoltLogLevel> 
   fatal: BoltLogLevel.ERROR,
 };
 
+function parse(msg: string): [Record<string, unknown>, string] {
+  const jsonStart = msg.indexOf("{");
+  if (jsonStart === -1) {
+    return [{}, msg];
+  }
+
+  try {
+    const context = JSON.parse(msg.slice(jsonStart));
+    const label = msg.slice(0, jsonStart).trim().replace(/:$/, "");
+    return [context, label];
+  } catch {
+    return [{}, msg];
+  }
+}
+
 export function initBoltLogger(): BoltLogger {
   const state = {
     level: PINO_TO_BOLT_LOG_LEVEL_MAPPING[env.LOG_LEVEL],
@@ -19,10 +34,10 @@ export function initBoltLogger(): BoltLogger {
   };
 
   return {
-    debug: (...msgs) => state.child.debug(msgs.join(" ")),
-    info: (...msgs) => state.child.info(msgs.join(" ")),
-    warn: (...msgs) => state.child.warn(msgs.join(" ")),
-    error: (...msgs) => state.child.error(msgs.join(" ")),
+    debug: (msg) => state.child.debug(...parse(msg)),
+    info: (msg) => state.child.info(...parse(msg)),
+    warn: (msg) => state.child.warn(...parse(msg)),
+    error: (msg) => state.child.error(...parse(msg)),
     setLevel: (l) => {
       state.level = l;
       state.child = state.child.child({}, { level: l });
