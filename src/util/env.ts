@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
+import { resolveWithSchema } from "./resolve-with-schema.js";
 
 const environmentSchema = z.object({
   // slack
@@ -16,16 +17,4 @@ const environmentSchema = z.object({
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
 });
 
-type Env = z.infer<typeof environmentSchema>;
-
-function init(): Env {
-  const parsed = environmentSchema.safeParse(process.env);
-  if (!parsed.success) {
-    const tree = z.treeifyError(parsed.error);
-    throw new Error(`Invalid environment variables:\n${JSON.stringify(tree, undefined, 2)}`);
-  }
-
-  return parsed.data;
-}
-
-export const env = init();
+export const env = resolveWithSchema('Environment', () => process.env, environmentSchema);
