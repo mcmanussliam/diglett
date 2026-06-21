@@ -52,6 +52,12 @@ function applyBudget(text: string): string {
   return `[...truncated]\n${tail.slice(tail.indexOf("\n") + 1)}`;
 }
 
+/**
+ * Reduce GitHub Actions logs to lines likely to explain the failure.
+ *
+ * The parser preserves important grouped output, deduplicates adjacent repeats, and hard caps the
+ * final text so tool calls cannot accidentally send huge logs to Claude.
+ */
 export function compressLogs(raw: string): string {
   const parser = new LogParser();
   parser.addRaw(raw);

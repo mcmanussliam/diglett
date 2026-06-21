@@ -5,12 +5,12 @@
   },
   "display_information": {
     "name": "Diglett",
-    "description": "CI failure diagnosis inside your thread",
+    "description": "Pipeline failure diagnosis inside your thread",
     "background_color": "#a0522d"
   },
   "features": {
     "assistant_view": {
-      "assistant_description": "CI failure diagnosis inside your thread",
+      "assistant_description": "Pipeline failure diagnosis inside your thread",
       "suggested_prompts": [
         {
           "title": "Why did my last build fail?",

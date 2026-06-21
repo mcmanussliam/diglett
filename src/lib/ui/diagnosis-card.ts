@@ -2,6 +2,7 @@ import type { KnownBlock } from "@slack/types";
 import type { GitHubRunContext } from "../agent/context-extractor.js";
 import type { Diagnosis } from "../integrations/anthropic.js";
 
+/** Build the Slack Block Kit message shown in the CI failure thread. */
 export function buildDiagnosisCard(
   context: GitHubRunContext,
   diagnosis: Diagnosis,

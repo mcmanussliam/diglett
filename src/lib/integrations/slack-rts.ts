@@ -31,6 +31,12 @@ const rtsResponseSchema = z
   })
   .passthrough();
 
+/**
+ * Normalize Slack RTS responses into the compact shape used by the agent.
+ *
+ * Slack's SDK does not currently expose a typed `assistant.search.context` helper, so the response
+ * is treated as unknown and validated here at the integration boundary.
+ */
 export function normalizeRtsResponse(response: unknown): SlackRtsResult[] {
   const parsed = rtsResponseSchema.safeParse(response);
   if (!parsed.success) {
@@ -65,6 +71,7 @@ export class SlackRtsClient {
     this.client = new WebClient(userToken);
   }
 
+  /** Search workspace context through Slack RTS using the installed user's token. */
   async search(query: string, limit = 5): Promise<Result<SlackRtsResult[]>> {
     try {
       const response = await this.client.apiCall("assistant.search.context", {

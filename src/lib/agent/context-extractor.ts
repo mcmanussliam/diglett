@@ -13,6 +13,7 @@ export interface GitHubRunContext {
   run_url: string;
 }
 
+/** Extract the GitHub Actions run referenced by a Slack thread parent message. */
 export function extractGitHubContext(text: string): GitHubRunContext | null {
   const jobMatch = text.match(JOB_URL_RE);
   const runMatch = text.match(RUN_URL_RE);

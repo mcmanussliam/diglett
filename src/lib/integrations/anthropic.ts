@@ -39,6 +39,12 @@ If search_slack returns a relevant prior discussion, include its permalink and a
 
 Be concise — engineers read this in Slack.`;
 
+/**
+ * Extract and validate Claude's final diagnosis JSON.
+ *
+ * Claude can wrap JSON in incidental text despite the prompt. We intentionally recover the first
+ * JSON object and then rely on Zod for the actual contract.
+ */
 export function parseDiagnosis(text: string): Result<Diagnosis> {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
@@ -67,6 +73,7 @@ export class AnthropicClient {
     this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...options });
   }
 
+  /** Send one agent turn to Claude with the currently available tool schemas. */
   async chat(messages: MessageParam[], tools?: Tool[]): Promise<Result<Message>> {
     this.logger.debug({ turns: messages.length }, "calling claude");
 

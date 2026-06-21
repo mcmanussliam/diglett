@@ -8,11 +8,18 @@ import type { GitHubRunContext } from "../context-extractor.js";
 export type AgentToolInput = Record<string, unknown>;
 type AgentToolSchema = z.ZodType<AgentToolInput>;
 
+/**
+ * Per-diagnosis dependencies available to tool executors.
+ *
+ * Keep this object request-scoped. Tools should receive clients through this context rather than
+ * constructing their own user-specific clients at module load.
+ */
 export interface AgentToolContext {
   run: GitHubRunContext;
   slackRts?: SlackRtsClient;
 }
 
+/** A Claude-callable capability with its Anthropic schema and request-scoped executor. */
 export interface AgentTool {
   name: string;
   schema: Tool;
@@ -28,6 +35,12 @@ interface AgentToolDefinition<TSchema extends AgentToolSchema> {
   execute: (input: z.infer<TSchema>, context: AgentToolContext) => Promise<string>;
 }
 
+/**
+ * Convert a Zod object schema into the subset of JSON Schema Anthropic expects for tool inputs.
+ *
+ * Tool definitions use `zod/v3` schemas because `zod-to-json-schema@3.25.x` supports Zod v4 as
+ * a peer dependency but converts v3-style schemas.
+ */
 function toAnthropicInputSchema(schema: AgentToolSchema): Tool["input_schema"] {
   const jsonSchema = zodToJsonSchema(schema, {
     $refStrategy: "none",
@@ -45,6 +58,12 @@ function toAnthropicInputSchema(schema: AgentToolSchema): Tool["input_schema"] {
   };
 }
 
+/**
+ * Define a Claude-callable tool.
+ *
+ * The Zod schema is the source of truth: it generates the Anthropic schema and validates
+ * model-supplied input before the executor runs.
+ */
 export function defineTool<TSchema extends AgentToolSchema>(
   definition: AgentToolDefinition<TSchema>,
 ): AgentTool {
@@ -61,6 +80,7 @@ export function defineTool<TSchema extends AgentToolSchema>(
   };
 }
 
+/** Register the complete tool list and fail fast if two tools expose the same name. */
 export function defineTools<const TTools extends readonly AgentTool[]>(tools: TTools): TTools {
   const names = new Set<string>();
 
@@ -75,6 +95,12 @@ export function defineTools<const TTools extends readonly AgentTool[]>(tools: TT
   return tools;
 }
 
+/**
+ * Execute a tool by name and convert all expected failure modes into text Claude can read.
+ *
+ * Tool failures are returned as tool results instead of thrown so one flaky external API does not
+ * crash the whole diagnosis loop.
+ */
 export async function executeToolByName(
   tools: readonly AgentTool[],
   name: string,
@@ -103,6 +129,7 @@ function toAgentToolInput(input: unknown): AgentToolInput {
     : {};
 }
 
+/** Return tools that are usable for the current request context. */
 export function getAvailableTools(
   tools: readonly AgentTool[],
   context: AgentToolContext,
@@ -110,6 +137,7 @@ export function getAvailableTools(
   return tools.filter((tool) => tool.isAvailable(context));
 }
 
+/** Extract Anthropic tool schemas from executable tool definitions. */
 export function getToolSchemas(tools: readonly AgentTool[]): Tool[] {
   return tools.map((tool) => tool.schema);
 }
