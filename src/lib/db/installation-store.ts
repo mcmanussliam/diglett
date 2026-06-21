@@ -1,5 +1,3 @@
-// TODO: After hackathon consider migrating to a remote postgres instance for multi-server support.
-
 import type { Installation, InstallationQuery, InstallationStore } from "@slack/bolt";
 import Database from "better-sqlite3";
 import { env } from "../../util/env.js";
@@ -27,7 +25,6 @@ export class SqliteInstallationStore implements InstallationStore {
 
   constructor() {
     this.db = new Database(env.DB_PATH);
-
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS installations (
         id TEXT PRIMARY KEY,
@@ -83,6 +80,7 @@ export class SqliteInstallationStore implements InstallationStore {
       if (!row) {
         return err(new Error(`No installation found for team:${teamId}`));
       }
+
       const installation = JSON.parse(row.installation) as Installation;
       return ok(installation.user.token);
     } catch (e) {
