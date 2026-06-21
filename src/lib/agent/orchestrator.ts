@@ -9,7 +9,8 @@ import type { GitHubRunContext } from "./context-extractor.js";
 
 const logger = log.child({ name: "orchestrator" });
 
-const MAX_ITERATIONS = 8;
+const MAX_ITERATIONS = 10;
+const SOFT_LIMIT_ITERATION = 6;
 
 const TOOLS: Tool[] = [
   {
@@ -174,7 +175,19 @@ export async function diagnose(
     );
 
     messages.push({ role: "assistant", content: response.content });
-    messages.push({ role: "user", content: buildToolResults(toolUseBlocks, results) });
+
+    const toolResultContent: MessageParam["content"] = buildToolResults(toolUseBlocks, results);
+    const nudge =
+      i >= SOFT_LIMIT_ITERATION
+        ? "\n\nYou have used many tool calls. Stop fetching files and provide your final JSON diagnosis now based on what you have gathered."
+        : "";
+
+    messages.push({
+      role: "user",
+      content: nudge
+        ? [...(Array.isArray(toolResultContent) ? toolResultContent : [toolResultContent]), { type: "text", text: nudge }]
+        : toolResultContent,
+    });
 
     logger.debug(
       { iteration: i + 1, tools: toolUseBlocks.map((b) => b.name) },
