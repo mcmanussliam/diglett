@@ -49,11 +49,9 @@ async function bootstrap(): Promise<void> {
   const logger = log.child({ name: bootstrap.name });
 
   const [app, receiver, installationStore] = init();
-  logger.debug("app initialised");
 
   registerMentionHandler(app, installationStore);
   registerAssistantHandlers(app, installationStore);
-  logger.debug("handlers registered");
 
   receiver.router.get("/health", (_req: Request, res: Response) => {
     res.json({
