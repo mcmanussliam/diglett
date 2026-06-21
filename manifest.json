@@ -42,6 +42,9 @@
         "im:history",
         "im:read",
         "im:write"
+      ],
+      "user": [
+        "search:read"
       ]
     }
   },

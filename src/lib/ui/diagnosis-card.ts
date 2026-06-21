@@ -1,6 +1,6 @@
 import type { KnownBlock } from "@slack/types";
-import type { Diagnosis } from "../integrations/anthropic.js";
 import type { GitHubRunContext } from "../agent/context-extractor.js";
+import type { Diagnosis } from "../integrations/anthropic.js";
 
 export function buildDiagnosisCard(
   context: GitHubRunContext,
@@ -13,7 +13,7 @@ export function buildDiagnosisCard(
       type: "header",
       text: {
         type: "plain_text",
-        text: `:mag: Pipeline Failure Analysis`,
+        text: ":mag: Pipeline Failure Analysis",
         emoji: true,
       },
     },

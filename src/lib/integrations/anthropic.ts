@@ -1,8 +1,8 @@
 import Anthropic, { type ClientOptions } from "@anthropic-ai/sdk";
-import type { MessageParam, Tool, Message } from "@anthropic-ai/sdk/resources/messages.js";
-import { log } from "../logging/logger.js";
+import type { Message, MessageParam, Tool } from "@anthropic-ai/sdk/resources/messages.js";
 import { env } from "../../util/env.js";
 import { err, type Result } from "../../util/result.js";
+import { log } from "../logging/logger.js";
 
 export interface Diagnosis {
   summary: string;

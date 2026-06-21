@@ -1,4 +1,4 @@
-import { type Line, LogParser, Command } from "@robherley/actions-log-parser";
+import { Command, type Line, LogParser } from "@robherley/actions-log-parser";
 
 const CHAR_BUDGET = 15_000;
 const ERROR_KEYWORDS =

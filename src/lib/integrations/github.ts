@@ -1,8 +1,8 @@
 import { Octokit } from "@octokit/rest";
-import { log } from "../logging/logger.js";
 import { env } from "../../util/env.js";
-import { ok, err, type Result } from "../../util/result.js";
+import { err, ok, type Result } from "../../util/result.js";
 import type { GitHubRunContext } from "../agent/context-extractor.js";
+import { log } from "../logging/logger.js";
 
 export interface CommitInfo {
   sha: string;

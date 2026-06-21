@@ -1,16 +1,21 @@
 import type { App } from "@slack/bolt";
-import { log } from "../logging/logger.js";
 import { extractGitHubContext } from "../agent/context-extractor.js";
-import { github } from "../integrations/github.js";
 import { diagnose } from "../agent/orchestrator.js";
+import type { SqliteInstallationStore } from "../db/installation-store.js";
+import { github } from "../integrations/github.js";
+import { log } from "../logging/logger.js";
 import { buildDiagnosisCard } from "../ui/diagnosis-card.js";
 
 const logger = log.child({ name: "mentions" });
 
-export const registerMentionHandler = (app: App): void => {
+export const registerMentionHandler = (
+  app: App,
+  installationStore: SqliteInstallationStore,
+): void => {
   app.event("app_mention", async ({ event, client, say }) => {
     const threadTs = event.thread_ts ?? event.ts;
     const channelId = event.channel;
+    const teamId = event.team ?? "";
 
     logger.debug({ channel: channelId, user: event.user }, "mention received");
 
@@ -45,7 +50,19 @@ export const registerMentionHandler = (app: App): void => {
       return;
     }
 
-    const diagnosisResult = await diagnose(context, logsResult.value);
+    const tokenResult = installationStore.fetchUserToken(teamId);
+    if (!tokenResult.ok) {
+      logger.debug(
+        { teamId, err: tokenResult.error.message },
+        "no installation found for team, skipping slack search",
+      );
+    }
+
+    const diagnosisResult = await diagnose(
+      context,
+      logsResult.value,
+      tokenResult.ok ? tokenResult.value : undefined,
+    );
     if (!diagnosisResult.ok) {
       await say({
         text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",

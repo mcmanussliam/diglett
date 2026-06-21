@@ -1,5 +1,5 @@
+import { err, ok, type Result } from "../../util/result.js";
 import { log } from "../logging/logger.js";
-import { ok, err, type Result } from "../../util/result.js";
 
 const logger = log.child({ name: "docker-hub" });
 

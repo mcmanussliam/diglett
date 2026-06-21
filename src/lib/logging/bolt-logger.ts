@@ -1,7 +1,7 @@
-import { LogLevel as BoltLogLevel, type Logger as BoltLogger } from "@slack/bolt";
-import { log } from "./logger.js";
-import { env } from "../../util/env.js";
+import { type Logger as BoltLogger, LogLevel as BoltLogLevel } from "@slack/bolt";
 import type { Level as PinoLogLevel } from "pino";
+import { env } from "../../util/env.js";
+import { log } from "./logger.js";
 
 export const PINO_TO_BOLT_LOG_LEVEL_MAPPING: Record<PinoLogLevel, BoltLogLevel> = {
   trace: BoltLogLevel.DEBUG,
