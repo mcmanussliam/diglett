@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { type ClientOptions } from "@anthropic-ai/sdk";
+import type { MessageParam, Tool, Message } from "@anthropic-ai/sdk/resources/messages.js";
 import { log } from "../logging/logger.js";
 import { env } from "../../util/env.js";
-import { ok, err, type Result } from "../../util/result.js";
-import type { GitHubRunContext } from "../agent/context-extractor.js";
+import { err, type Result } from "../../util/result.js";
 
 export interface Diagnosis {
   summary: string;
@@ -11,63 +11,49 @@ export interface Diagnosis {
   confidence: "high" | "medium" | "low";
 }
 
-const SYSTEM_PROMPT = `You are Diglett, a CI/CD failure diagnosis assistant embedded in Slack.
-You receive compressed GitHub Actions logs and return a structured JSON diagnosis.
+export const SYSTEM_PROMPT = `You are Diglett, a CI/CD failure diagnosis assistant embedded in Slack.
+You have tools to investigate failures deeply. Use them to find the actual root cause — not just what the logs say.
 
-Rules:
-- Be concise — engineers read this in Slack, not a report
-- Focus on root cause, not symptoms
-- If logs are insufficient, say so in root_cause
-- Always respond with valid JSON matching the schema exactly`;
+Strategy:
+1. Read the logs and any workflow file provided
+2. Fetch relevant source files to understand what the code is actually doing
+3. If failures involve Docker images, external tools, or dependencies, check recent releases for breaking changes
+4. Correlate all findings to identify the true root cause
 
-const RESPONSE_SCHEMA = `{
+When you have enough information, respond with JSON only:
+{
   "summary": "one sentence description of what failed",
   "root_cause": "the underlying cause, not just the symptom",
   "fix_suggestion": "concrete actionable fix",
   "confidence": "high | medium | low"
-}`;
+}
+
+Be concise — engineers read this in Slack.`;
 
 export class AnthropicClient {
-  private readonly client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  private readonly client: Anthropic;
 
   private readonly logger = log.child({ name: "anthropic" });
 
-  async diagnose(context: GitHubRunContext, compressedLogs: string): Promise<Result<Diagnosis>> {
-    const userMessage = [
-      `Repository: ${context.owner}/${context.repo}`,
-      `Run: ${context.run_url}`,
-      context.branch ? `Branch: ${context.branch}` : null,
-      context.commit_sha ? `Commit: ${context.commit_sha}` : null,
-      "",
-      "--- Compressed logs ---",
-      compressedLogs,
-      "",
-      `Respond with JSON only, matching this schema:\n${RESPONSE_SCHEMA}`,
-    ]
-      .filter((l) => l !== null)
-      .join("\n");
+  constructor(options?: ClientOptions) {
+    this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...options });
+  }
 
-    this.logger.debug({ owner: context.owner, repo: context.repo }, "sending logs to claude");
+  async chat(messages: MessageParam[], tools?: Tool[]): Promise<Result<Message>> {
+    this.logger.debug({ turns: messages.length }, "calling claude");
 
     try {
       const message = await this.client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage }],
+        tools: tools ?? [],
+        messages,
       });
 
-      const text = message.content.find((b) => b.type === "text")?.text ?? "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        return err(new Error("Claude response contained no JSON"));
-      }
-
-      const diagnosis = JSON.parse(jsonMatch[0]) as Diagnosis;
-      this.logger.debug({ confidence: diagnosis.confidence }, "diagnosis complete");
-      return ok(diagnosis);
+      return { ok: true, value: message };
     } catch (e) {
-      this.logger.error({ err: e }, "failed to get diagnosis from claude");
+      this.logger.error({ err: e }, "claude api call failed");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }

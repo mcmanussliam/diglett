@@ -115,6 +115,71 @@ export class GitHubClient {
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
+
+  async fetchWorkflowFile(context: GitHubRunContext): Promise<Result<string | null>> {
+    try {
+      const { data: run } = await this.octokit.actions.getWorkflowRun({
+        owner: context.owner,
+        repo: context.repo,
+        run_id: Number.parseInt(context.run_id, 10),
+      });
+
+      const { data: workflow } = await this.octokit.actions.getWorkflow({
+        owner: context.owner,
+        repo: context.repo,
+        workflow_id: run.workflow_id,
+      });
+
+      return this.fetchRepoFile(context, workflow.path);
+    } catch (e) {
+      this.logger.warn({ err: e }, "failed to fetch workflow file");
+      return ok(null);
+    }
+  }
+
+  async fetchRepoFile(context: GitHubRunContext, path: string): Promise<Result<string | null>> {
+    try {
+      const params = {
+        owner: context.owner,
+        repo: context.repo,
+        path,
+        ...(context.commit_sha ? { ref: context.commit_sha } : {}),
+      };
+
+      const { data } = await this.octokit.repos.getContent(params);
+
+      if (Array.isArray(data) || data.type !== "file" || !("content" in data)) {
+        return ok(null);
+      }
+
+      const content = Buffer.from(data.content, "base64").toString("utf-8");
+      this.logger.debug({ path, chars: content.length }, "repo file fetched");
+      return ok(content);
+    } catch (e) {
+      this.logger.warn({ err: e, path }, "failed to fetch repo file");
+      return ok(null);
+    }
+  }
+
+  async fetchReleases(owner: string, repo: string, limit = 10): Promise<Result<string>> {
+    try {
+      const { data } = await this.octokit.repos.listReleases({ owner, repo, per_page: limit });
+
+      const summary = data
+        .map((r) =>
+          [
+            `## ${r.tag_name} — ${r.name ?? ""} (${r.published_at ?? "unknown"})`,
+            r.body?.slice(0, 800) ?? "(no release notes)",
+          ].join("\n"),
+        )
+        .join("\n\n---\n\n");
+
+      return ok(summary || "No releases found");
+    } catch (e) {
+      this.logger.warn({ err: e }, "failed to fetch releases");
+      return err(e instanceof Error ? e : new Error(String(e)));
+    }
+  }
 }
 
 export const github = new GitHubClient();

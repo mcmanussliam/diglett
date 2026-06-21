@@ -2,8 +2,7 @@ import type { App } from "@slack/bolt";
 import { log } from "../logging/logger.js";
 import { extractGitHubContext } from "../agent/context-extractor.js";
 import { github } from "../integrations/github.js";
-import { compressLogs } from "../agent/log-compressor.js";
-import { anthropic } from "../integrations/anthropic.js";
+import { diagnose } from "../agent/orchestrator.js";
 import { buildDiagnosisCard } from "../ui/diagnosis-card.js";
 
 const logger = log.child({ name: "mentions" });
@@ -46,13 +45,7 @@ export const registerMentionHandler = (app: App): void => {
       return;
     }
 
-    const compressed = compressLogs(logsResult.value);
-    logger.debug(
-      { raw_chars: logsResult.value.length, compressed_chars: compressed.length },
-      "logs compressed",
-    );
-
-    const diagnosisResult = await anthropic.diagnose(context, compressed);
+    const diagnosisResult = await diagnose(context, logsResult.value);
     if (!diagnosisResult.ok) {
       await say({
         text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",

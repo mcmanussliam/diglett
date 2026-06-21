@@ -2,8 +2,7 @@ import { Assistant, App } from "@slack/bolt";
 import { log } from "../logging/logger.js";
 import { extractGitHubContext } from "../agent/context-extractor.js";
 import { github } from "../integrations/github.js";
-import { compressLogs } from "../agent/log-compressor.js";
-import { anthropic } from "../integrations/anthropic.js";
+import { diagnose } from "../agent/orchestrator.js";
 import { buildDiagnosisCard } from "../ui/diagnosis-card.js";
 
 const logger = log.child({ name: "assistant" });
@@ -57,24 +56,16 @@ export const registerAssistantHandlers = (app: App): void => {
         await say({
           text: "Found the run but couldn't fetch logs. Check that the run is complete and the repo is accessible.",
         });
-
         return;
       }
 
-      const compressed = compressLogs(logsResult.value);
-      logger.debug(
-        { raw_chars: logsResult.value.length, compressed_chars: compressed.length },
-        "logs compressed",
-      );
-
       await setStatus("Diagnosing with Claude...");
 
-      const diagnosisResult = await anthropic.diagnose(context, compressed);
+      const diagnosisResult = await diagnose(context, logsResult.value);
       if (!diagnosisResult.ok) {
         await say({
           text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",
         });
-
         return;
       }
 
