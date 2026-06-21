@@ -4,6 +4,7 @@ import { extractGitHubContext } from "../agent/context-extractor.js";
 import { github } from "../integrations/github.js";
 import { compressLogs } from "../agent/log-compressor.js";
 import { anthropic } from "../integrations/anthropic.js";
+import { buildDiagnosisCard } from "../ui/diagnosis-card.js";
 
 const logger = log.child({ name: "mentions" });
 
@@ -60,15 +61,10 @@ export const registerMentionHandler = (app: App): void => {
       return;
     }
 
-    const { summary, root_cause, fix_suggestion, confidence } = diagnosisResult.value;
+    const card = buildDiagnosisCard(context, diagnosisResult.value);
 
     await say({
-      text: [
-        `*${summary}*`,
-        `*Root cause:* ${root_cause}`,
-        `*Fix:* ${fix_suggestion}`,
-        `_Confidence: ${confidence}_`,
-      ].join("\n"),
+      ...card,
       thread_ts: threadTs,
     });
   });
