@@ -1,40 +1,33 @@
-import { LogParser, Command } from "@robherley/actions-log-parser";
+import { type Line, LogParser, Command } from "@robherley/actions-log-parser";
 
 const CHAR_BUDGET = 15_000;
-const ERROR_KEYWORDS = /\b(error|fail|fatal|exception|panic|abort|cannot|could not|no such|permission denied)\b/i;
+const ERROR_KEYWORDS =
+  /\b(error|fail|fatal|exception|panic|abort|cannot|could not|no such|permission denied)\b/i;
 
 function isSignificant(cmd: Command | undefined, content: string): boolean {
-  return (
-    cmd === Command.Error ||
-    cmd === Command.Warning ||
-    ERROR_KEYWORDS.test(content)
-  );
+  return cmd === Command.Error || cmd === Command.Warning || ERROR_KEYWORDS.test(content);
 }
 
-export function compressLogs(raw: string): string {
-  const parser = new LogParser();
-  parser.addRaw(raw);
+function isStructural(cmd: Command | undefined): boolean {
+  return cmd === Command.Group || cmd === Command.EndGroup;
+}
 
+function expandGroup(line: Line): string[] {
+  return line.group?.children.filter((s) => !isStructural(s.cmd)).map((s) => s.content) ?? [];
+}
+
+function collectLines(lines: Line[]): string[] {
   const output: string[] = [];
 
-  for (const line of parser.lines) {
-    if (line.cmd === Command.Group || line.cmd === Command.EndGroup) {
+  for (const line of lines) {
+    if (isStructural(line.cmd)) {
       continue;
     }
 
     if (line.group) {
-      if (!isSignificant(line.cmd, line.content)) {
-        continue;
+      if (isSignificant(line.cmd, line.content)) {
+        output.push(...expandGroup(line));
       }
-
-      for (const sibling of line.group.children) {
-        if (sibling.cmd === Command.Group || sibling.cmd === Command.EndGroup) {
-          continue;
-        }
-
-        output.push(sibling.content);
-      }
-
       continue;
     }
 
@@ -43,18 +36,27 @@ export function compressLogs(raw: string): string {
     }
   }
 
-  const deduped: string[] = [];
-  for (const line of output) {
-    if (deduped.at(-1) !== line) {
-      deduped.push(line);
-    }
+  return output;
+}
+
+function dedupe(lines: string[]): string[] {
+  return lines.filter((line, i) => lines[i - 1] !== line);
+}
+
+function applyBudget(text: string): string {
+  if (text.length <= CHAR_BUDGET) {
+    return text;
   }
 
-  const joined = deduped.join("\n").trim();
-  if (joined.length <= CHAR_BUDGET) {
-    return joined;
-  }
-
-  const tail = joined.slice(-CHAR_BUDGET);
+  const tail = text.slice(-CHAR_BUDGET);
   return `[...truncated]\n${tail.slice(tail.indexOf("\n") + 1)}`;
+}
+
+export function compressLogs(raw: string): string {
+  const parser = new LogParser();
+  parser.addRaw(raw);
+
+  const lines = collectLines(parser.lines);
+  const joined = dedupe(lines).join("\n").trim();
+  return applyBudget(joined);
 }

@@ -3,7 +3,6 @@ import { log } from "../logging/logger.js";
 import { env } from "../../util/env.js";
 import { ok, err, type Result } from "../../util/result.js";
 import type { GitHubRunContext } from "../agent/context-extractor.js";
-import { Logger } from "pino";
 
 export interface CommitInfo {
   sha: string;
@@ -57,7 +56,8 @@ export class GitHubClient {
         job_id: Number.parseInt(jobId, 10),
       });
 
-      const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+      const text =
+        typeof response.data === "string" ? response.data : JSON.stringify(response.data);
       this.logger.debug({ job_id: jobId, chars: text.length }, "job logs fetched");
       return ok(text);
     } catch (e) {

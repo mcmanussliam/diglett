@@ -31,7 +31,10 @@ export const registerMentionHandler = (app: App): void => {
       return;
     }
 
-    logger.debug({ run_url: context.run_url, owner: context.owner, repo: context.repo }, "github context extracted");
+    logger.debug(
+      { run_url: context.run_url, owner: context.owner, repo: context.repo },
+      "github context extracted",
+    );
 
     const logsResult = await github.fetchJobLogs(context);
     if (!logsResult.ok) {
@@ -43,7 +46,10 @@ export const registerMentionHandler = (app: App): void => {
     }
 
     const compressed = compressLogs(logsResult.value);
-    logger.debug({ raw_chars: logsResult.value.length, compressed_chars: compressed.length }, "logs compressed");
+    logger.debug(
+      { raw_chars: logsResult.value.length, compressed_chars: compressed.length },
+      "logs compressed",
+    );
 
     const diagnosisResult = await anthropic.diagnose(context, compressed);
     if (!diagnosisResult.ok) {
