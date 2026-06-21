@@ -29,11 +29,9 @@ async function handleUserMessage(
   const teamId = "team" in message && typeof message.team === "string" ? message.team : "";
 
   logger.debug("assistant message received");
-
   await setStatus("Looking for a GitHub Actions run URL...");
 
   const context = extractGitHubContext(text);
-
   if (!context) {
     await say({ text: "Paste a GitHub Actions run URL and I'll diagnose what went wrong." });
     return;
@@ -47,11 +45,11 @@ async function handleUserMessage(
     await say({
       text: "Found the run but couldn't fetch logs. Check that the run is complete and the repo is accessible.",
     });
+
     return;
   }
 
   await setStatus("Diagnosing with Claude...");
-
   const tokenResult = installationStore.fetchUserToken(teamId);
   if (!tokenResult.ok) {
     logger.debug(
@@ -69,6 +67,7 @@ async function handleUserMessage(
     await say({
       text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",
     });
+
     return;
   }
 

@@ -47,6 +47,7 @@ export const registerMentionHandler = (
         text: "Found the run but couldn't fetch logs from GitHub. Check that the run is complete and the repo is accessible.",
         thread_ts: threadTs,
       });
+
       return;
     }
 
@@ -68,6 +69,7 @@ export const registerMentionHandler = (
         text: "Fetched the logs but couldn't generate a diagnosis. Try again in a moment.",
         thread_ts: threadTs,
       });
+
       return;
     }
 
