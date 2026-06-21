@@ -7,7 +7,7 @@ import { err, ok, type Result } from "../../util/result.js";
 import { anthropic, type Diagnosis } from "../integrations/anthropic.js";
 import { fetchDockerHubTags } from "../integrations/docker-hub.js";
 import { github } from "../integrations/github.js";
-import { SlackSearchClient } from "../integrations/slack-search.js";
+import { SlackRtsClient } from "../integrations/slack-rts.js";
 import { log } from "../logging/logger.js";
 import type { GitHubRunContext } from "./context-extractor.js";
 import { compressLogs } from "./log-compressor.js";
@@ -120,7 +120,7 @@ async function toolFetchDockerHubTags(input: Record<string, unknown>): Promise<s
 
 async function toolSearchSlack(
   input: Record<string, unknown>,
-  slackSearch?: SlackSearchClient,
+  slackSearch?: SlackRtsClient,
 ): Promise<string> {
   if (!slackSearch) {
     return "Slack search is not available for this workspace.";
@@ -137,7 +137,7 @@ async function executeTool(
   name: string,
   input: Record<string, unknown>,
   context: GitHubRunContext,
-  slackSearch?: SlackSearchClient,
+  slackSearch?: SlackRtsClient,
 ): Promise<string> {
   logger.debug({ tool: name }, "executing tool");
 
@@ -207,7 +207,7 @@ async function runToolRound(
   iteration: number,
   context: GitHubRunContext,
   tools: Tool[],
-  slackSearch?: SlackSearchClient,
+  slackSearch?: SlackRtsClient,
 ): Promise<Result<Diagnosis | null>> {
   const chatResult = await anthropic.chat(messages, tools);
   if (!chatResult.ok) {
@@ -262,7 +262,7 @@ export async function diagnose(
   rawLogs: string,
   userToken?: string,
 ): Promise<Result<Diagnosis>> {
-  const slackSearch = userToken ? new SlackSearchClient(userToken) : undefined;
+  const slackSearch = userToken ? new SlackRtsClient(userToken) : undefined;
   const tools = slackSearch ? TOOLS : TOOLS.filter((t) => t.name !== "search_slack");
 
   const compressed = compressLogs(rawLogs);
