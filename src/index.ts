@@ -17,7 +17,11 @@ function init(): [App, ExpressReceiver, SqliteInstallationStore] {
     signingSecret: env.SLACK_SIGNING_SECRET,
     clientId: env.SLACK_CLIENT_ID,
     clientSecret: env.SLACK_CLIENT_SECRET,
+    redirectUri: env.SLACK_REDIRECT_URI,
     stateSecret: env.SLACK_STATE_SECRET,
+    installerOptions: {
+      redirectUriPath: "/slack/oauth_redirect",
+    },
     scopes: [
       "app_mentions:read",
       "assistant:write",

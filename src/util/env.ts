@@ -6,6 +6,7 @@ const environmentSchema = z.object({
   // slack oauth
   SLACK_CLIENT_ID: z.string().min(1),
   SLACK_CLIENT_SECRET: z.string().min(1),
+  SLACK_REDIRECT_URI: z.url(),
   SLACK_SIGNING_SECRET: z.string().min(1),
   SLACK_STATE_SECRET: z.string().min(1),
 
