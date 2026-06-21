@@ -1,41 +1,63 @@
 import type { Tool } from "@anthropic-ai/sdk/resources/messages.js";
+import type { JsonSchema7Type } from "zod-to-json-schema";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import type { z } from "zod/v3";
 import type { SlackRtsClient } from "../../integrations/slack-rts.js";
 import type { GitHubRunContext } from "../context-extractor.js";
 
 export type AgentToolInput = Record<string, unknown>;
+type AgentToolSchema = z.ZodType<AgentToolInput>;
 
 export interface AgentToolContext {
   run: GitHubRunContext;
   slackRts?: SlackRtsClient;
 }
 
-export interface AgentTool<TInput extends AgentToolInput = AgentToolInput> {
+export interface AgentTool {
   name: string;
   schema: Tool;
   isAvailable: (context: AgentToolContext) => boolean;
-  execute: (input: TInput, context: AgentToolContext) => Promise<string>;
+  execute: (input: AgentToolInput, context: AgentToolContext) => Promise<string>;
 }
 
-interface AgentToolDefinition<TInput extends AgentToolInput> {
+interface AgentToolDefinition<TSchema extends AgentToolSchema> {
   name: string;
   description: string;
-  inputSchema: Tool["input_schema"];
+  inputSchema: TSchema;
   isAvailable?: (context: AgentToolContext) => boolean;
-  execute: (input: TInput, context: AgentToolContext) => Promise<string>;
+  execute: (input: z.infer<TSchema>, context: AgentToolContext) => Promise<string>;
 }
 
-export function defineTool<TInput extends AgentToolInput>(
-  definition: AgentToolDefinition<TInput>,
-): AgentTool<TInput> {
+function toAnthropicInputSchema(schema: AgentToolSchema): Tool["input_schema"] {
+  const jsonSchema = zodToJsonSchema(schema, {
+    $refStrategy: "none",
+    target: "jsonSchema7",
+  }) as JsonSchema7Type;
+  const objectSchema =
+    typeof jsonSchema === "object" && jsonSchema !== null && !Array.isArray(jsonSchema)
+      ? jsonSchema
+      : {};
+
+  return {
+    type: "object",
+    properties: "properties" in objectSchema ? objectSchema.properties : {},
+    required: "required" in objectSchema ? objectSchema.required : null,
+  };
+}
+
+export function defineTool<TSchema extends AgentToolSchema>(
+  definition: AgentToolDefinition<TSchema>,
+): AgentTool {
   return {
     name: definition.name,
     schema: {
       name: definition.name,
       description: definition.description,
-      input_schema: definition.inputSchema,
+      input_schema: toAnthropicInputSchema(definition.inputSchema),
     },
     isAvailable: definition.isAvailable ?? (() => true),
-    execute: definition.execute,
+    execute: async (input, context) =>
+      definition.execute(definition.inputSchema.parse(input), context),
   };
 }
 
@@ -67,6 +89,9 @@ export async function executeToolByName(
   try {
     return await tool.execute(toAgentToolInput(input), context);
   } catch (e) {
+    if (e instanceof Error && e.name === "ZodError") {
+      return `Tool "${name}" received invalid input: ${e.message}`;
+    }
     const message = e instanceof Error ? e.message : String(e);
     return `Tool "${name}" failed: ${message}`;
   }

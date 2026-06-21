@@ -72,7 +72,9 @@ async function buildInitialMessage(context: GitHubRunContext, compressed: string
 }
 
 function isToolUseBlock(block: unknown): block is ToolUseBlock {
-  return typeof block === "object" && block !== null && "type" in block && block.type === "tool_use";
+  return (
+    typeof block === "object" && block !== null && "type" in block && block.type === "tool_use"
+  );
 }
 
 async function runToolRound(

@@ -3,8 +3,14 @@ import { fetchGitHubReleasesTool } from "./definitions/fetch-github-releases.js"
 import { fetchRepoFileTool } from "./definitions/fetch-repo-file.js";
 import { searchSlackTool } from "./definitions/search-slack.js";
 import { defineTools } from "./define-tool.js";
+import type { AgentTool } from "./define-tool.js";
 
-export { defineTools, executeToolByName, getAvailableTools, getToolSchemas } from "./define-tool.js";
+export {
+  defineTools,
+  executeToolByName,
+  getAvailableTools,
+  getToolSchemas,
+} from "./define-tool.js";
 export type { AgentTool, AgentToolContext, AgentToolInput } from "./define-tool.js";
 
 export const AGENT_TOOLS = defineTools([
@@ -12,4 +18,4 @@ export const AGENT_TOOLS = defineTools([
   fetchGitHubReleasesTool,
   fetchDockerHubTagsTool,
   searchSlackTool,
-]);
+] satisfies AgentTool[]);
