@@ -4,7 +4,7 @@ import type {
   ToolUseBlock,
 } from "@anthropic-ai/sdk/resources/messages.js";
 import { err, ok, type Result } from "../../util/result.js";
-import { anthropic, type Diagnosis } from "../integrations/anthropic.js";
+import { anthropic, parseDiagnosis, type Diagnosis } from "../integrations/anthropic.js";
 import { github } from "../integrations/github.js";
 import { SlackRtsClient } from "../integrations/slack-rts.js";
 import { log } from "../logging/logger.js";
@@ -33,19 +33,6 @@ function buildToolResults(
     tool_use_id: block.id,
     content: results[i] ?? "no result",
   }));
-}
-
-function parseDiagnosis(text: string): Result<Diagnosis> {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    return err(new Error("Claude response contained no JSON diagnosis"));
-  }
-
-  try {
-    return ok(JSON.parse(jsonMatch[0]) as Diagnosis);
-  } catch (e) {
-    return err(e instanceof Error ? e : new Error(String(e)));
-  }
 }
 
 async function buildInitialMessage(context: GitHubRunContext, compressed: string): Promise<string> {

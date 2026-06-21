@@ -1,4 +1,5 @@
 import { WebClient } from "@slack/web-api";
+import { z } from "zod";
 import { err, ok, type Result } from "../../util/result.js";
 import { log } from "../logging/logger.js";
 
@@ -11,35 +12,50 @@ export interface SlackRtsResult {
   ts: string;
 }
 
-interface RtsMessage {
-  text?: string;
-  permalink?: string;
-  ts?: string;
-  channel?: {
-    name?: string;
-  };
-}
+const rtsMessageSchema = z
+  .object({
+    text: z.string().optional(),
+    permalink: z.string().optional(),
+    ts: z.string().optional(),
+    channel: z.object({ name: z.string().optional() }).optional(),
+  })
+  .passthrough();
 
-interface RtsResponse {
-  messages?: {
-    matches?: RtsMessage[];
-  };
-}
+const rtsResponseSchema = z
+  .object({
+    messages: z
+      .object({
+        matches: z.array(rtsMessageSchema).optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
 
 export function normalizeRtsResponse(response: unknown): SlackRtsResult[] {
-  const rtsResponse = response as RtsResponse;
+  const parsed = rtsResponseSchema.safeParse(response);
+  if (!parsed.success) {
+    return [];
+  }
+
+  const rtsResponse = parsed.data;
   const matches = rtsResponse.messages?.matches ?? [];
 
-  return matches
-    .filter((match): match is RtsMessage & { text: string; permalink: string } =>
-      Boolean(match.text && match.permalink),
-    )
-    .map((match) => ({
-      text: match.text.slice(0, 500),
-      permalink: match.permalink,
+  const out: SlackRtsResult[] = [];
+
+  for (const match of matches) {
+    if (!match.text || !match.permalink) {
+      continue;
+    }
+
+    out.push({
+      text: match.text?.slice(0, 500) ?? "",
+      permalink: match.permalink ?? "",
       channel: match.channel?.name ?? "unknown",
       ts: match.ts ?? "",
-    }));
+    });
+  }
+
+  return out;
 }
 
 export class SlackRtsClient {

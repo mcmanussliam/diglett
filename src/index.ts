@@ -1,6 +1,7 @@
 import { App, ExpressReceiver } from "@slack/bolt";
 import type { Request, Response } from "express";
 import { SqliteInstallationStore } from "./lib/db/installation-store.js";
+import { registerActionHandlers } from "./lib/handlers/actions.js";
 import { registerAssistantHandlers } from "./lib/handlers/assistant.js";
 import { registerMentionHandler } from "./lib/handlers/mention.js";
 import { initBoltLogger, PINO_TO_BOLT_LOG_LEVEL_MAPPING } from "./lib/logging/bolt-logger.js";
@@ -52,6 +53,7 @@ async function bootstrap(): Promise<void> {
 
   registerMentionHandler(app, installationStore);
   registerAssistantHandlers(app, installationStore);
+  registerActionHandlers(app);
 
   receiver.router.get("/health", (_req: Request, res: Response) => {
     res.json({

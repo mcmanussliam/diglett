@@ -7,6 +7,9 @@ export function buildDiagnosisCard(
   diagnosis: Diagnosis,
 ): { text: string; blocks: KnownBlock[] } {
   const { summary, root_cause, fix_suggestion, confidence } = diagnosis;
+  const hasRelatedSlackThread = Boolean(
+    diagnosis.related_slack_thread_url && diagnosis.related_slack_thread_preview,
+  );
 
   const blocks: KnownBlock[] = [
     {
@@ -27,7 +30,7 @@ export function buildDiagnosisCard(
         type: "button",
         text: {
           type: "plain_text",
-          text: "View Run",
+          text: "Open GitHub Run",
           emoji: true,
         },
         url: context.run_url,
@@ -57,6 +60,17 @@ export function buildDiagnosisCard(
         text: `*Suggested Fix*\n${fix_suggestion}`,
       },
     },
+    ...(hasRelatedSlackThread
+      ? ([
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*Possible recurring issue*\nSimilar context appeared in Slack before: _${diagnosis.related_slack_thread_preview}_\n<${diagnosis.related_slack_thread_url}|View related thread>`,
+            },
+          },
+        ] satisfies KnownBlock[])
+      : []),
     {
       type: "context",
       elements: [
