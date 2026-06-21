@@ -25,18 +25,7 @@ function parse(msg: unknown): [Record<string, unknown>, string] {
     return [{ value: msg }, String(msg)];
   }
 
-  const jsonStart = msg.indexOf("{");
-  if (jsonStart === -1) {
-    return [{}, msg];
-  }
-
-  try {
-    const context = JSON.parse(msg.slice(jsonStart));
-    const label = msg.slice(0, jsonStart).trim().replace(/:$/, "");
-    return [context, label];
-  } catch {
-    return [{}, msg];
-  }
+  return [{}, msg];
 }
 
 export function initBoltLogger(): BoltLogger {
