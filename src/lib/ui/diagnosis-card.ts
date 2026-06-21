@@ -46,7 +46,7 @@ export function buildDiagnosisCard(
         },
         {
           type: "mrkdwn",
-          text: `*Confidence*\n$${confidence}`,
+          text: `*Confidence*\n${confidence}`,
         },
       ],
     },
