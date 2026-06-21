@@ -12,7 +12,19 @@ export const PINO_TO_BOLT_LOG_LEVEL_MAPPING: Record<PinoLogLevel, BoltLogLevel> 
   fatal: BoltLogLevel.ERROR,
 };
 
-function parse(msg: string): [Record<string, unknown>, string] {
+function parse(msg: unknown): [Record<string, unknown>, string] {
+  if (msg instanceof Error) {
+    return [{ err: msg }, msg.message];
+  }
+
+  if (typeof msg === "object" && msg !== null && !Array.isArray(msg)) {
+    return [msg as Record<string, unknown>, ""];
+  }
+
+  if (typeof msg !== "string") {
+    return [{ value: msg }, String(msg)];
+  }
+
   const jsonStart = msg.indexOf("{");
   if (jsonStart === -1) {
     return [{}, msg];
