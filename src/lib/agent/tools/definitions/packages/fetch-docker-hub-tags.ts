@@ -1,5 +1,5 @@
 import { z } from "zod/v3";
-import { fetchDockerHubTags } from "../../../../integrations/docker-hub.js";
+import { docker } from "../../../../integrations/docker.js";
 import { defineTool } from "../../define-tool.js";
 
 export const fetchDockerHubTagsTool = defineTool({
@@ -15,7 +15,7 @@ export const fetchDockerHubTagsTool = defineTool({
       ),
   }),
   execute: async (input) => {
-    const result = await fetchDockerHubTags(input.image);
+    const result = await docker.tags(input.image);
     return result.ok ? result.value : `Failed to fetch Docker tags: ${result.error.message}`;
   },
 });

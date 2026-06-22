@@ -17,21 +17,15 @@ export const diagnosisSchema = z.object({
 
 export type Diagnosis = z.infer<typeof diagnosisSchema>;
 
-export class AnthropicClient {
-  private readonly client: Anthropic;
+function init(options?: ClientOptions) {
+  const logger = log.child({ name: 'anthropic' });
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...options });
 
-  private readonly logger = log.child({ name: AnthropicClient.name });
-
-  constructor(options?: ClientOptions) {
-    this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...options });
-  }
-
-  /** Send one agent turn to Claude with the currently available tool schemas. */
-  async chat(messages: MessageParam[], tools?: Tool[]): Promise<Result<Message>> {
-    this.logger.debug({ turns: messages.length }, "Calling Claude");
+  async function chat(messages: MessageParam[], tools?: Tool[]): Promise<Result<Message>> {
+    logger.debug({ turns: messages.length }, "Calling Claude");
 
     try {
-      const message = await this.client.messages.create({
+      const message = await client.messages.create({
         model: env.ANTHROPIC_MODEL,
         max_tokens: env.ANTHROPIC_MAX_TOKENS,
         thinking: {
@@ -47,29 +41,27 @@ export class AnthropicClient {
 
       return { ok: true, value: message };
     } catch (e) {
-      this.logger.error({ err: e }, "Claude api call failed");
+      logger.error({ err: e }, "Claude api call failed");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
 
-  parse(text: string): Result<Diagnosis> {
+  function parse(text: string): Result<Diagnosis> {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return err(new Error("Claude response contained no JSON diagnosis"));
     }
 
-    try {
-      const parsedJson = JSON.parse(jsonMatch[0]) as unknown;
-      const parsedDiagnosis = diagnosisSchema.safeParse(parsedJson);
-      if (!parsedDiagnosis.success) {
-        return err(parsedDiagnosis.error);
-      }
-
-      return ok(parsedDiagnosis.data);
-    } catch (e) {
-      return err(e instanceof Error ? e : new Error(String(e)));
+    const parsedJson = JSON.parse(jsonMatch[0]) as unknown;
+    const parsedDiagnosis = diagnosisSchema.safeParse(parsedJson);
+    if (!parsedDiagnosis.success) {
+      return err(parsedDiagnosis.error);
     }
+
+    return ok(parsedDiagnosis.data);
   }
+
+  return { chat, parse }
 }
 
-export const anthropic = new AnthropicClient();
+export const anthropic = init();
