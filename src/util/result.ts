@@ -1,8 +1,8 @@
 /** A successful result containing a value. */
-export type Ok<T> = { ok: true; value: T; };
+export type Ok<T> = { ok: true; value: T };
 
 /** A failed result containing a recoverable error. */
-export type Err<E = Error> = { ok: false; error: E; };
+export type Err<E = Error> = { ok: false; error: E };
 
 /**
  * Represents the outcome of an operation that can fail in an expected,
