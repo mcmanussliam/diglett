@@ -41,50 +41,45 @@ async function buildInitialMessage(context: GitHubRunContext, logs: LogIndex): P
     github.fetchWorkflowFile(context),
     github.fetchRunMetadata(context),
   ]);
-  const workflowSection =
-    workflowResult.ok && workflowResult.value
-      ? `\n\n--- Workflow file ---\n${workflowResult.value}`
-      : "";
 
-  return [
-    `Repository: ${context.owner}/${context.repo}`,
-    `Run: ${context.run_url}`,
-    context.branch ? `Branch: ${context.branch}` : null,
-    context.commit_sha ? `Commit: ${context.commit_sha}` : null,
-    formatRunMetadata(runMetadataResult.ok ? runMetadataResult.value : null),
-    "",
-    "--- Initial log evidence ---",
-    logs.buildInitialOverview(),
-    workflowSection,
-    "",
-    "Investigate the failure using the available tools, then respond with a JSON diagnosis.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
+  return JSON.stringify({
+    task: "diagnose_ci_failure",
+    repository: {
+      owner: context.owner,
+      repo: context.repo,
+    },
+    run: {
+      id: context.run_id,
+      url: context.run_url,
+      branch: context.branch,
+      commit_sha: context.commit_sha,
+      metadata: runMetadataResult.ok ? compactRunMetadata(runMetadataResult.value) : null,
+    },
+    workflow_file: workflowResult.ok ? workflowResult.value : null,
+    initial_log_evidence: logs.buildInitialEvidence(),
+    guidance:
+      "Use search_logs or fetch_log_window if the initial_log_evidence is missing the exact failing file, command, or diagnostic block. Respond with the required JSON diagnosis.",
+  });
 }
 
-function formatRunMetadata(runMetadata: WorkflowRunMetadata | null): string | null {
+export function compactRunMetadata(
+  runMetadata: WorkflowRunMetadata | null,
+): Record<string, string> | null {
   if (!runMetadata) {
     return null;
   }
 
-  const lines = [
-    "",
-    "--- Run metadata ---",
-    field("Workflow", runMetadata.name),
-    field("Event", runMetadata.event),
-    field("Status", runMetadata.status),
-    field("Conclusion", runMetadata.conclusion),
-    field("Created", runMetadata.created_at),
-    field("Started", runMetadata.run_started_at),
-    field("Updated", runMetadata.updated_at),
-  ].filter((line) => line !== null);
-
-  return lines.length > 2 ? lines.join("\n") : null;
-}
-
-function field(label: string, value: string | null): string | null {
-  return value ? `${label}: ${value}` : null;
+  return Object.fromEntries(
+    Object.entries({
+      workflow: runMetadata.name,
+      event: runMetadata.event,
+      status: runMetadata.status,
+      conclusion: runMetadata.conclusion,
+      created_at: runMetadata.created_at,
+      run_started_at: runMetadata.run_started_at,
+      updated_at: runMetadata.updated_at,
+    }).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
 }
 
 function isToolUseBlock(block: unknown): block is ToolUseBlock {

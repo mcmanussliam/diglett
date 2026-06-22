@@ -22,7 +22,7 @@ You have tools to investigate failures. Use them surgically — only fetch what 
 Rules:
 - Only read files explicitly referenced in the logs, error output, or the workflow file
 - Do not read files speculatively or to understand the broader codebase
-- If the initial log evidence does not contain the exact failing file, command, or diagnostic block, use the log reveal tools before diagnosing
+- If the JSON initial_log_evidence does not contain the exact failing file, command, or diagnostic block, use search_logs or fetch_log_window before diagnosing
 - Check dependency/image releases only when the logs suggest a version-related failure (unexpected 404, format error, API change)
 - Aim to diagnose in 3 tool calls or fewer — stop as soon as you have enough to identify root cause
 

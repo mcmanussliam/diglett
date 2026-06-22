@@ -1,33 +1,22 @@
-const INITIAL_OVERVIEW_CHARS = 12_000;
-const TOOL_RESULT_CHARS = 18_000;
-const DEFAULT_CONTEXT_LINES = 10;
+const INITIAL_EXCERPT_CONTEXT_LINES = 10;
+const MAX_INITIAL_EXCERPTS = 6;
 const MAX_SEARCH_RESULTS = 8;
+const TOOL_RESULT_CHARS = 18_000;
 
 const SIGNAL_RE =
   /\b(error|failed|failure|fatal|exception|panic|abort|cannot|could not|no such|permission denied|exit code [1-9]|found \d+ errors?)\b|[×✖]/i;
-const SECTION_START_RE = /^(?:\d{4}-\d{2}-\d{2}T[^\s]+\s+)?(?:##\[group\])?(Run .+)$/;
 const ANNOTATION_RE = /^(?:\d{4}-\d{2}-\d{2}T[^\s]+\s+)?::(error|warning)\b/i;
 const ESC = String.fromCharCode(27);
 
-export interface LogSectionSummary {
-  id: string;
-  title: string;
-  startLine: number;
-  endLine: number;
-  lineCount: number;
-  signalCount: number;
-  preview: string;
-}
-
-interface LogSection extends LogSectionSummary {
-  lines: string[];
-}
-
-interface SignalWindow {
-  lineNumber: number;
-  sectionId: string;
+export interface LogExcerpt {
+  around_line: number;
   reason: string;
   lines: string[];
+}
+
+export interface InitialLogEvidence {
+  line_count: number;
+  excerpts: LogExcerpt[];
 }
 
 function normalizeLines(raw: string): string[] {
@@ -53,126 +42,62 @@ function stripAnsi(raw: string): string {
   return output;
 }
 
-function detectSectionTitle(line: string): string | null {
-  const trimmed = line.trim();
-  const match = trimmed.match(SECTION_START_RE);
-  if (match?.[1]) {
-    return match[1].trim();
-  }
-
-  return null;
-}
-
 function isSignalLine(line: string): boolean {
   return SIGNAL_RE.test(line) || ANNOTATION_RE.test(line);
 }
 
-function trimToBudget(text: string, maxChars: number): string {
-  return text.length <= maxChars ? text : `${text.slice(0, maxChars)}\n...(truncated)`;
-}
-
 function formatLine(lineNumber: number, text: string): string {
-  return `${String(lineNumber).padStart(5, " ")} | ${text}`;
+  return `${lineNumber}: ${text}`;
 }
 
-function uniqueSorted(values: number[]): number[] {
-  return [...new Set(values)].sort((a, b) => a - b);
+function trimToBudget(text: string): string {
+  return text.length <= TOOL_RESULT_CHARS ? text : `${text.slice(0, TOOL_RESULT_CHARS)}\n...`;
 }
 
 /**
- * Indexed, request-scoped view over one GitHub Actions job log.
+ * Request-scoped line index over one GitHub Actions job log.
  *
- * The index gives Claude a compact initial overview plus exact reveal operations for sections,
- * search hits, and line windows. This avoids hiding the diagnostic block behind an aggressive
- * global compressor while still keeping the first prompt small.
+ * This keeps only the raw lines and exposes two reveal operations: exact text search and
+ * line-number windows. The initial prompt receives a small JSON-safe evidence object.
  */
 export class LogIndex {
   private readonly lines: string[];
 
-  private readonly sections: LogSection[];
-
   constructor(raw: string) {
     this.lines = normalizeLines(raw);
-    this.sections = this.buildSections();
   }
 
-  get lineCount(): number {
-    return this.lines.length;
-  }
-
-  listSections(): LogSectionSummary[] {
-    return this.sections.map(({ lines: _lines, ...summary }) => summary);
-  }
-
-  buildInitialOverview(): string {
+  buildInitialEvidence(): InitialLogEvidence {
     if (this.lines.length === 0) {
-      return "(no log output available)";
+      return { line_count: 0, excerpts: [] };
     }
 
-    const signalWindows = this.collectSignalWindows(DEFAULT_CONTEXT_LINES);
-    const sectionSummary = this.formatSectionList();
-    const signalSummary =
-      signalWindows.length > 0
-        ? signalWindows
-            .slice(0, MAX_SEARCH_RESULTS)
-            .map((window) => this.formatWindow(window))
-            .join("\n\n")
-        : this.formatWindow({
-            lineNumber: Math.max(1, this.lines.length),
-            sectionId: this.sections.at(-1)?.id ?? "log",
-            reason: "tail",
-            lines: this.getWindowLines(Math.max(1, this.lines.length), 30, 0),
-          });
+    const signalLines = this.lines
+      .map((line, index) => ({ line, lineNumber: index + 1 }))
+      .filter(({ line }) => isSignalLine(line))
+      .map(({ lineNumber }) => lineNumber);
 
-    return trimToBudget(
-      [
-        `Log lines: ${this.lines.length}`,
-        "",
-        "--- Log sections ---",
-        sectionSummary,
-        "",
-        "--- Failure-focused excerpts ---",
-        signalSummary,
-        "",
-        "Use list_log_sections, fetch_log_section, search_logs, or fetch_log_window when you need more exact log context.",
-      ].join("\n"),
-      INITIAL_OVERVIEW_CHARS,
-    );
-  }
+    const excerptLines = this.clusterLineNumbers(signalLines).slice(0, MAX_INITIAL_EXCERPTS);
+    const fallbackLines = excerptLines.length > 0 ? excerptLines : [Math.max(1, this.lines.length)];
 
-  formatSectionList(): string {
-    if (this.sections.length === 0) {
-      return "(no sections)";
-    }
-
-    return this.sections
-      .map(
-        (section) =>
-          `${section.id}: ${section.title} (lines ${section.startLine}-${section.endLine}, ${section.signalCount} signal lines)\n  ${section.preview}`,
-      )
-      .join("\n");
-  }
-
-  fetchSection(sectionId: string): string {
-    const section = this.sections.find((candidate) => candidate.id === sectionId);
-    if (!section) {
-      return `Unknown log section: ${sectionId}`;
-    }
-
-    const body = section.lines
-      .map((line, offset) => formatLine(section.startLine + offset, line))
-      .join("\n");
-
-    return trimToBudget(
-      `Section ${section.id}: ${section.title} (lines ${section.startLine}-${section.endLine})\n${body}`,
-      TOOL_RESULT_CHARS,
-    );
+    return {
+      line_count: this.lines.length,
+      excerpts: fallbackLines.map((lineNumber) => ({
+        around_line: lineNumber,
+        reason: excerptLines.length > 0 ? "signal" : "tail",
+        lines: this.getWindowLines(
+          lineNumber,
+          excerptLines.length > 0 ? INITIAL_EXCERPT_CONTEXT_LINES : 30,
+          excerptLines.length > 0 ? INITIAL_EXCERPT_CONTEXT_LINES : 0,
+        ),
+      })),
+    };
   }
 
   search(query: string, contextLines: number): string {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
-      return "Search query was empty.";
+      return JSON.stringify({ query, matches: [], error: "Search query was empty." });
     }
 
     const matches = this.lines
@@ -181,92 +106,42 @@ export class LogIndex {
       .slice(0, MAX_SEARCH_RESULTS);
 
     if (matches.length === 0) {
-      return `No log lines matched "${query}".`;
+      return JSON.stringify({ query, matches: [] });
     }
 
-    const windows = matches.map(({ lineNumber }) =>
-      this.formatWindow({
-        lineNumber,
-        sectionId: this.findSectionForLine(lineNumber)?.id ?? "log",
-        reason: `matched "${query}"`,
-        lines: this.getWindowLines(lineNumber, contextLines, contextLines),
+    return trimToBudget(
+      JSON.stringify({
+        query,
+        matches: matches.map(({ lineNumber }) => ({
+          around_line: lineNumber,
+          lines: this.getWindowLines(lineNumber, contextLines, contextLines),
+        })),
       }),
     );
-
-    return trimToBudget(windows.join("\n\n"), TOOL_RESULT_CHARS);
   }
 
   fetchWindow(lineNumber: number, before: number, after: number): string {
     if (!Number.isInteger(lineNumber) || lineNumber < 1 || lineNumber > this.lines.length) {
-      return `Line ${lineNumber} is outside the log range 1-${this.lines.length}.`;
+      return JSON.stringify({
+        line: lineNumber,
+        error: `Line ${lineNumber} is outside the log range 1-${this.lines.length}.`,
+      });
     }
 
     return trimToBudget(
-      this.formatWindow({
-        lineNumber,
-        sectionId: this.findSectionForLine(lineNumber)?.id ?? "log",
-        reason: "requested window",
+      JSON.stringify({
+        around_line: lineNumber,
         lines: this.getWindowLines(lineNumber, before, after),
       }),
-      TOOL_RESULT_CHARS,
     );
   }
 
-  private buildSections(): LogSection[] {
-    if (this.lines.length === 0) {
-      return [];
-    }
-
-    const starts = this.lines
-      .map((line, index) => ({ title: detectSectionTitle(line), index }))
-      .filter((item): item is { title: string; index: number } => item.title !== null);
-
-    const boundaries = starts.length > 0 ? starts : [{ title: "Full log", index: 0 }];
-
-    return boundaries.map((boundary, i) => {
-      const nextBoundary = boundaries[i + 1];
-      const endIndex = nextBoundary ? nextBoundary.index - 1 : this.lines.length - 1;
-      const sectionLines = this.lines.slice(boundary.index, endIndex + 1);
-      const signalCount = sectionLines.filter(isSignalLine).length;
-      const preview = this.buildPreview(sectionLines);
-      const startLine = boundary.index + 1;
-      const endLine = endIndex + 1;
-
-      return {
-        id: `section_${i + 1}`,
-        title: boundary.title,
-        startLine,
-        endLine,
-        lineCount: sectionLines.length,
-        signalCount,
-        preview,
-        lines: sectionLines,
-      };
-    });
-  }
-
-  private buildPreview(lines: string[]): string {
-    const firstSignal = lines.find((line) => isSignalLine(line) && line.trim().length > 0);
-    const firstNonEmpty = lines.find((line) => line.trim().length > 0);
-    return (firstSignal ?? firstNonEmpty ?? "(empty section)").trim().slice(0, 180);
-  }
-
-  private collectSignalWindows(contextLines: number): SignalWindow[] {
-    const signalLineNumbers = this.lines
-      .map((line, index) => ({ line, lineNumber: index + 1 }))
-      .filter(({ line }) => isSignalLine(line))
-      .map(({ lineNumber }) => lineNumber);
-
-    const clustered = uniqueSorted(signalLineNumbers).filter(
-      (lineNumber, index, all) => index === 0 || lineNumber - (all[index - 1] ?? 0) > contextLines,
+  private clusterLineNumbers(lineNumbers: number[]): number[] {
+    const sorted = [...new Set(lineNumbers)].sort((a, b) => a - b);
+    return sorted.filter(
+      (lineNumber, index, all) =>
+        index === 0 || lineNumber - (all[index - 1] ?? 0) > INITIAL_EXCERPT_CONTEXT_LINES,
     );
-
-    return clustered.map((lineNumber) => ({
-      lineNumber,
-      sectionId: this.findSectionForLine(lineNumber)?.id ?? "log",
-      reason: "signal line",
-      lines: this.getWindowLines(lineNumber, contextLines, contextLines),
-    }));
   }
 
   private getWindowLines(lineNumber: number, before: number, after: number): string[] {
@@ -276,19 +151,6 @@ export class LogIndex {
     const end = Math.min(this.lines.length, lineNumber + safeAfter);
 
     return this.lines.slice(start - 1, end).map((line, offset) => formatLine(start + offset, line));
-  }
-
-  private formatWindow(window: SignalWindow): string {
-    return [
-      `[${window.sectionId}] around line ${window.lineNumber} (${window.reason})`,
-      ...window.lines,
-    ].join("\n");
-  }
-
-  private findSectionForLine(lineNumber: number): LogSection | undefined {
-    return this.sections.find(
-      (section) => lineNumber >= section.startLine && lineNumber <= section.endLine,
-    );
   }
 }
 
