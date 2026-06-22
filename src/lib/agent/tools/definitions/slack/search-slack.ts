@@ -1,5 +1,5 @@
 import { z } from "zod/v3";
-import type { SlackRtsResult } from "../../../../integrations/slack-rts.js";
+import type { SlackRtsResult } from "../../../../integrations/slack.js";
 import { defineTool } from "../../define-tool.js";
 
 function formatSlackResults(
@@ -29,13 +29,13 @@ export const searchSlackTool = defineTool({
       .default(5)
       .describe("Max number of results to return"),
   }),
-  isAvailable: (context) => context.slackRts !== undefined,
+  isAvailable: (context) => context.slack !== undefined,
   execute: async (input, context) => {
-    if (!context.slackRts) {
+    if (!context.slack) {
       return "Slack search is not available for this workspace.";
     }
 
-    const result = await context.slackRts.search(input.query, input.limit);
+    const result = await context.slack.search(input.query, input.limit);
     return result.ok
       ? formatSlackResults(result.value)
       : `Slack search failed: ${result.error.message}`;

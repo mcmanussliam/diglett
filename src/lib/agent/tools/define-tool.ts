@@ -2,7 +2,7 @@ import type { Tool } from "@anthropic-ai/sdk/resources/messages.js";
 import type { z } from "zod/v3";
 import type { JsonSchema7Type } from "zod-to-json-schema";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { SlackRtsClient } from "../../integrations/slack-rts.js";
+import type { Slack } from "../../integrations/slack.js";
 import type { GitHubRunContext } from "../context-extractor.js";
 import type { LogIndex } from "../log-index.js";
 
@@ -18,7 +18,7 @@ type AgentToolSchema = z.ZodType<AgentToolInput>;
 export interface AgentToolContext {
   run: GitHubRunContext;
   logs: LogIndex;
-  slackRts?: SlackRtsClient;
+  slack?: Slack;
 }
 
 /** A Claude-callable capability with its Anthropic schema and request-scoped executor. */

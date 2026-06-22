@@ -27,10 +27,10 @@ export interface WorkflowRunMetadata {
   updated_at: string | null;
 }
 
-export class GitHubClient {
-  private readonly octokit = new Octokit({ auth: env.GITHUB_PAT });
+export class GitHub {
+  private readonly logger = log.child({ name: GitHub.name });
 
-  private readonly logger = log.child({ name: GitHubClient.name });
+  private readonly octokit = new Octokit({ auth: env.GITHUB_PAT });
 
   private async resolveJobId(context: GitHubRunContext): Promise<string | null> {
     if (context.job_id) {
@@ -216,4 +216,4 @@ export class GitHubClient {
   }
 }
 
-export const github = new GitHubClient();
+export const github = new GitHub();

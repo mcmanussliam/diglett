@@ -6,7 +6,7 @@ import type {
 import { err, ok, type Result } from "../../util/result.js";
 import { anthropic, type Diagnosis } from "../integrations/anthropic.js";
 import { github, type WorkflowRunMetadata } from "../integrations/github.js";
-import { SlackRtsClient } from "../integrations/slack-rts.js";
+import { Slack } from "../integrations/slack.js";
 import { log } from "../logging/logger.js";
 import type { GitHubRunContext } from "./context-extractor.js";
 import type { LogIndex } from "./log-index.js";
@@ -140,7 +140,7 @@ export async function diagnose(
   const toolContext: AgentToolContext = {
     run: context,
     logs,
-    ...(userToken ? { slackRts: new SlackRtsClient(userToken) } : {}),
+    ...(userToken ? { slackRts: new Slack(userToken) } : {}),
   };
 
   const tools = getAvailableTools(AGENT_TOOLS, toolContext);
