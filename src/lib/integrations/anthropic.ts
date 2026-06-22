@@ -79,8 +79,14 @@ export class AnthropicClient {
 
     try {
       const message = await this.client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4096,
+        model: env.ANTHROPIC_MODEL,
+        max_tokens: env.ANTHROPIC_MAX_TOKENS,
+        thinking: {
+          type: "adaptive",
+        },
+        output_config: {
+          effort: env.ANTHROPIC_EFFORT_LEVEL,
+        },
         system: SYSTEM_PROMPT,
         tools: tools ?? [],
         messages,

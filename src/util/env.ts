@@ -6,12 +6,17 @@ const environmentSchema = z.object({
   // slack oauth
   SLACK_CLIENT_ID: z.string().min(1),
   SLACK_CLIENT_SECRET: z.string().min(1),
-  SLACK_REDIRECT_URI: z.url(),
   SLACK_SIGNING_SECRET: z.string().min(1),
   SLACK_STATE_SECRET: z.string().min(1),
+  SLACK_REDIRECT_URI: z.url(),
 
-  // integrations
+  // claude
   ANTHROPIC_API_KEY: z.string().min(1),
+  ANTHROPIC_MAX_TOKENS: z.coerce.number().default(4096),
+  ANTHROPIC_EFFORT_LEVEL: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('medium'),
+  ANTHROPIC_MODEL: z.string().default('claude-sonnet-4-6'),
+
+  // github
   GITHUB_PAT: z.string().min(1),
 
   // database
