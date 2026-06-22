@@ -10,4 +10,5 @@ function init(): PinoLogger {
   return pino({ level: env.LOG_LEVEL }, stream);
 }
 
+/** Global pino logger for use throughout the app */
 export const log = init();
