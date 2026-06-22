@@ -80,7 +80,7 @@ export const registerAssistantHandlers = (
 ): void => {
   const assistant = new Assistant({
     threadStarted: async ({ setSuggestedPrompts, setTitle }) => {
-      await setTitle("CI Failure Diagnosis");
+      await setTitle("Pipeline Failure Diagnosis");
       await setSuggestedPrompts({
         title: "What can I help with?",
         prompts: SUGGESTED_PROMPTS,

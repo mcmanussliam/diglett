@@ -8,7 +8,7 @@ A Slack agent that diagnoses GitHub Actions failures in the thread where they're
 
 ## What it does
 
-Mention `@diglett` in a thread under a CI failure notification. It finds the GitHub Actions run URL, fetches the failed job logs, and lets Claude investigate with tools for repository files, releases, Docker Hub tags, and Slack RTS search - then posts a compact diagnosis card with the likely cause and next steps.
+Mention `@diglett` in a thread under a pipeline failure notification. It finds the GitHub Actions run URL, fetches the failed job logs, and lets Claude investigate with tools for repository files, releases, Docker Hub tags, and Slack RTS search - then posts a compact diagnosis card with the likely cause and next steps.
 
 ## Quick Start
 
