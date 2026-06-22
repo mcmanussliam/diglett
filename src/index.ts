@@ -50,10 +50,12 @@ async function bootstrap(): Promise<void> {
   const logger = log.child({ name: bootstrap.name });
 
   const [app, receiver, installationStore] = init();
+  logger.debug("Initialised App, Receiver and Installation Store");
 
   registerMentionHandler(app, installationStore);
   registerAssistantHandlers(app, installationStore);
   registerActionHandlers(app);
+  logger.debug("Registered Mention, Assistant and Action handlers");
 
   receiver.router.get("/health", (_req: Request, res: Response) => {
     res.json({
@@ -66,7 +68,7 @@ async function bootstrap(): Promise<void> {
   });
 
   await app.start(env.PORT);
-  logger.info({ port: env.PORT }, "listening");
+  logger.info({ port: env.PORT }, "Listening");
 }
 
 void bootstrap();

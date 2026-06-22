@@ -29,13 +29,13 @@ export function extractGitHubContext(text: string): GitHubRunContext | null {
 
   const match = jobMatch ?? runMatch;
   if (!match) {
-    logger.trace({text}, 'no match found in message');
+    logger.trace({text}, 'No match found in message');
     return null;
   }
 
   const [, owner, repo, run_id] = match;
   if (!owner || !repo || !run_id) {
-    logger.trace({text}, 'no owner, repo or run id found within text');
+    logger.trace({text}, 'No `owner`, `repo` or run `run_id` found within message');
     return null;
   }
 
@@ -49,6 +49,10 @@ export function extractGitHubContext(text: string): GitHubRunContext | null {
     run_url: `https://github.com/${owner}/${repo}/actions/runs/${run_id}`,
   };
 
-  logger.trace({context}, 'successfully resolved github context');
+  logger.trace(
+    { run_url: context.run_url, owner: context.owner, repo: context.repo },
+    'Successfully resolved GitHub context'
+  );
+
   return context;
 }

@@ -27,10 +27,11 @@ export async function fetchDockerHubTags(image: string): Promise<Result<string>>
     const tags = data.results ?? [];
 
     const summary = tags.map((t) => `${t.name} (updated ${t.last_updated})`).join("\n");
-    logger.debug({ image, count: tags.length }, "docker hub tags fetched");
+    logger.debug({ image, count: tags.length }, "Docker hub tags fetched");
     return ok(summary || "No tags found");
+
   } catch (e) {
-    logger.warn({ err: e, image }, "failed to fetch docker hub tags");
+    logger.warn({ err: e, image }, "Failed to fetch docker hub tags");
     return err(e instanceof Error ? e : new Error(String(e)));
   }
 }

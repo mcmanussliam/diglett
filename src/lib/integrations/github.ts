@@ -30,7 +30,7 @@ export interface WorkflowRunMetadata {
 export class GitHubClient {
   private readonly octokit = new Octokit({ auth: env.GITHUB_PAT });
 
-  private readonly logger = log.child({ name: "github" });
+  private readonly logger = log.child({ name: GitHubClient.name });
 
   private async resolveJobId(context: GitHubRunContext): Promise<string | null> {
     if (context.job_id) {
@@ -45,11 +45,11 @@ export class GitHubClient {
 
     const failed = data.jobs.find((j) => j.conclusion === "failure");
     if (!failed) {
-      this.logger.warn({ run_id: context.run_id }, "no failed job found in run");
+      this.logger.warn({ run_id: context.run_id }, "No failed job found in run");
       return null;
     }
 
-    this.logger.debug({ job_id: failed.id }, "resolved failed job from run");
+    this.logger.debug({ job_id: failed.id }, "Resolved failed job from run");
     return String(failed.id);
   }
 
@@ -57,7 +57,7 @@ export class GitHubClient {
     try {
       const jobId = await this.resolveJobId(context);
       if (!jobId) {
-        return err(new Error("could not resolve a failed job ID for this run"));
+        return err(new Error("Could not resolve a failed job ID for this run"));
       }
 
       const response = await this.octokit.actions.downloadJobLogsForWorkflowRun({
@@ -66,12 +66,12 @@ export class GitHubClient {
         job_id: Number.parseInt(jobId, 10),
       });
 
-      const text =
-        typeof response.data === "string" ? response.data : JSON.stringify(response.data);
-      this.logger.debug({ job_id: jobId, chars: text.length }, "job logs fetched");
+      const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+      this.logger.debug({ job_id: jobId, chars: text.length }, "Job logs fetched");
       return ok(text);
+
     } catch (e) {
-      this.logger.error({ err: e }, "failed to fetch job logs");
+      this.logger.error({ err: e }, "Failed to fetch job logs");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
@@ -94,8 +94,9 @@ export class GitHubClient {
         message: data.commit.message.split("\n")[0] ?? "",
         changed_files: (data.files ?? []).map((f) => f.filename).slice(0, 20),
       });
+
     } catch (e) {
-      this.logger.warn({ err: e }, "failed to fetch commit info");
+      this.logger.warn({ err: e }, "Failed to fetch commit info");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
@@ -121,7 +122,7 @@ export class GitHubClient {
         last_success_at: lastSuccess?.created_at ?? null,
       });
     } catch (e) {
-      this.logger.warn({ err: e }, "failed to fetch run history");
+      this.logger.warn({ err: e }, "Failed to fetch run history");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
@@ -144,7 +145,7 @@ export class GitHubClient {
         updated_at: data.updated_at ?? null,
       });
     } catch (e) {
-      this.logger.warn({ err: e }, "failed to fetch run metadata");
+      this.logger.warn({ err: e }, "Failed to fetch run metadata");
       return ok(null);
     }
   }
@@ -165,7 +166,7 @@ export class GitHubClient {
 
       return this.fetchRepoFile(context, workflow.path);
     } catch (e) {
-      this.logger.warn({ err: e }, "failed to fetch workflow file");
+      this.logger.warn({ err: e }, "Failed to fetch workflow file");
       return ok(null);
     }
   }
@@ -189,7 +190,7 @@ export class GitHubClient {
       this.logger.debug({ path, chars: content.length }, "repo file fetched");
       return ok(content);
     } catch (e) {
-      this.logger.warn({ err: e, path }, "failed to fetch repo file");
+      this.logger.warn({ err: e, path }, "Failed to fetch repo file");
       return ok(null);
     }
   }
@@ -209,7 +210,7 @@ export class GitHubClient {
 
       return ok(summary || "No releases found");
     } catch (e) {
-      this.logger.warn({ err: e }, "failed to fetch releases");
+      this.logger.warn({ err: e }, "Failed to fetch releases");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }

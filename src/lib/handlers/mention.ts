@@ -17,7 +17,7 @@ export const registerMentionHandler = (
     const channelId = event.channel;
     const teamId = event.team ?? "";
 
-    logger.debug({ channel: channelId, user: event.user }, "mention received");
+    logger.debug({ channel: channelId, user: event.user }, "Mention received");
 
     const thread = await client.conversations.replies({
       channel: channelId,
@@ -33,13 +33,9 @@ export const registerMentionHandler = (
         text: "I couldn't find a GitHub Actions run URL in this thread. Paste the run URL (e.g. `github.com/org/repo/actions/runs/123`) and I'll diagnose it.",
         thread_ts: threadTs,
       });
+
       return;
     }
-
-    logger.debug(
-      { run_url: context.run_url, owner: context.owner, repo: context.repo },
-      "github context extracted",
-    );
 
     const logsResult = await github.fetchJobLogs(context);
     if (!logsResult.ok) {
@@ -55,7 +51,7 @@ export const registerMentionHandler = (
     if (!tokenResult.ok) {
       logger.debug(
         { teamId, err: tokenResult.error.message },
-        "no installation found for team, skipping slack search",
+        "No installation found for team, skipping slack search",
       );
     }
 

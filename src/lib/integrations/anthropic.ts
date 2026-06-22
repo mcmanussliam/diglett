@@ -20,7 +20,7 @@ export type Diagnosis = z.infer<typeof diagnosisSchema>;
 export class AnthropicClient {
   private readonly client: Anthropic;
 
-  private readonly logger = log.child({ name: "anthropic" });
+  private readonly logger = log.child({ name: AnthropicClient.name });
 
   constructor(options?: ClientOptions) {
     this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, ...options });
@@ -28,7 +28,7 @@ export class AnthropicClient {
 
   /** Send one agent turn to Claude with the currently available tool schemas. */
   async chat(messages: MessageParam[], tools?: Tool[]): Promise<Result<Message>> {
-    this.logger.debug({ turns: messages.length }, "calling claude");
+    this.logger.debug({ turns: messages.length }, "Calling Claude");
 
     try {
       const message = await this.client.messages.create({
@@ -47,7 +47,7 @@ export class AnthropicClient {
 
       return { ok: true, value: message };
     } catch (e) {
-      this.logger.error({ err: e }, "claude api call failed");
+      this.logger.error({ err: e }, "Claude api call failed");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }

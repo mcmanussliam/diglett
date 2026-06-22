@@ -43,7 +43,7 @@ export class SqliteInstallationStore implements InstallationStore {
 
     this.deleteStmt = this.db.prepare("DELETE FROM installations WHERE id = ?");
 
-    this.logger.info({ path: env.DB_PATH }, "sqlite installation store ready");
+    this.logger.info({ path: env.DB_PATH }, "Sqlite installation store ready");
   }
 
   async storeInstallation(installation: Installation): Promise<void> {
@@ -53,7 +53,7 @@ export class SqliteInstallationStore implements InstallationStore {
         : `team:${installation.team?.id}`;
 
     this.upsert.run(key, JSON.stringify(installation));
-    this.logger.debug({ key }, "installation stored");
+    this.logger.debug({ key }, "Installation stored");
   }
 
   async fetchInstallation(query: InstallationQuery<boolean>): Promise<Installation> {
@@ -64,14 +64,14 @@ export class SqliteInstallationStore implements InstallationStore {
       throw new Error(`No installation found for ${key}`);
     }
 
-    this.logger.debug({ key }, "installation fetched");
+    this.logger.debug({ key }, "Installation fetched");
     return JSON.parse(row.installation) as Installation;
   }
 
   async deleteInstallation(query: InstallationQuery<boolean>): Promise<void> {
     const key = installationKey(query);
     this.deleteStmt.run(key);
-    this.logger.debug({ key }, "installation deleted");
+    this.logger.debug({ key }, "Installation deleted");
   }
 
   fetchUserToken(teamId: string): Result<string | undefined> {

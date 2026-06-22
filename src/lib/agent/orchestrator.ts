@@ -110,7 +110,7 @@ async function runToolRound(
   const toolUseBlocks: ToolUseBlock[] = response.content.filter(isToolUseBlock);
   const results = await Promise.all(
     toolUseBlocks.map((block) => {
-      logger.debug({ tool: block.name }, "executing tool");
+      logger.debug({ tool: block.name }, "Executing tool");
       return executeToolByName(tools, block.name, block.input, toolContext);
     }),
   );
@@ -125,7 +125,7 @@ async function runToolRound(
 
   logger.debug(
     { iteration: iteration + 1, tools: toolUseBlocks.map((b) => b.name) },
-    "tool round complete",
+    "Tool round complete",
   );
 
   return ok(null);

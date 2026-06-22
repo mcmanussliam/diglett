@@ -28,7 +28,7 @@ async function handleUserMessage(
   const text = "text" in message && typeof message.text === "string" ? message.text : "";
   const teamId = "team" in message && typeof message.team === "string" ? message.team : "";
 
-  logger.debug("assistant message received");
+  logger.debug("Assistant message received");
   await setStatus("Looking for a GitHub Actions run URL...");
 
   const context = extractGitHubContext(text);
@@ -54,7 +54,7 @@ async function handleUserMessage(
   if (!tokenResult.ok) {
     logger.debug(
       { teamId, err: tokenResult.error.message },
-      "no installation found for team, skipping slack search",
+      "No installation found for team, skipping slack search",
     );
   }
 

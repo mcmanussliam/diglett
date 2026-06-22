@@ -78,12 +78,14 @@ export class SlackRtsClient {
         query,
         limit,
       });
+
       const results = normalizeRtsResponse(response);
 
-      logger.debug({ query, count: results.length }, "slack rts search complete");
+      logger.debug({ query, count: results.length }, "Slack rts search complete");
       return ok(results);
+
     } catch (e) {
-      logger.warn({ err: e, query }, "slack rts search failed");
+      logger.warn({ err: e, query }, "Slack rts search failed");
       return err(e instanceof Error ? e : new Error(String(e)));
     }
   }
