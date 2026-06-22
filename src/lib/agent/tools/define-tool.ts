@@ -1,9 +1,10 @@
 import type { Tool } from "@anthropic-ai/sdk/resources/messages.js";
+import type { z } from "zod/v3";
 import type { JsonSchema7Type } from "zod-to-json-schema";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { z } from "zod/v3";
 import type { SlackRtsClient } from "../../integrations/slack-rts.js";
 import type { GitHubRunContext } from "../context-extractor.js";
+import type { LogIndex } from "../log-index.js";
 
 export type AgentToolInput = Record<string, unknown>;
 type AgentToolSchema = z.ZodType<AgentToolInput>;
@@ -16,6 +17,7 @@ type AgentToolSchema = z.ZodType<AgentToolInput>;
  */
 export interface AgentToolContext {
   run: GitHubRunContext;
+  logs: LogIndex;
   slackRts?: SlackRtsClient;
 }
 

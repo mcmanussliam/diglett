@@ -1,6 +1,6 @@
 import { z } from "zod/v3";
-import { github } from "../../../integrations/github.js";
-import { defineTool } from "../define-tool.js";
+import { github } from "../../../../integrations/github.js";
+import { defineTool } from "../../define-tool.js";
 
 export const fetchRepoFileTool = defineTool({
   name: "fetch_repo_file",

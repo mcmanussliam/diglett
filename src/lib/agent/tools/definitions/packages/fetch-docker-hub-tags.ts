@@ -1,6 +1,6 @@
 import { z } from "zod/v3";
-import { fetchDockerHubTags } from "../../../integrations/docker-hub.js";
-import { defineTool } from "../define-tool.js";
+import { fetchDockerHubTags } from "../../../../integrations/docker-hub.js";
+import { defineTool } from "../../define-tool.js";
 
 export const fetchDockerHubTagsTool = defineTool({
   name: "fetch_docker_hub_tags",

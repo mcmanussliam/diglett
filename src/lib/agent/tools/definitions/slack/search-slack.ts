@@ -1,6 +1,6 @@
 import { z } from "zod/v3";
-import type { SlackRtsResult } from "../../../integrations/slack-rts.js";
-import { defineTool } from "../define-tool.js";
+import type { SlackRtsResult } from "../../../../integrations/slack-rts.js";
+import { defineTool } from "../../define-tool.js";
 
 function formatSlackResults(
   results: Pick<SlackRtsResult, "text" | "permalink" | "channel">[],

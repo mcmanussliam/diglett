@@ -17,7 +17,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.105.0",
     "@octokit/rest": "21.1.1",
-    "@robherley/actions-log-parser": "1.0.0",
     "@slack/bolt": "4.7.3",
     "@slack/web-api": "7.17.0",
     "better-sqlite3": "12.11.1",

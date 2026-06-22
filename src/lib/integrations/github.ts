@@ -17,6 +17,16 @@ export interface WorkflowRunSummary {
   last_success_at: string | null;
 }
 
+export interface WorkflowRunMetadata {
+  name: string | null;
+  status: string | null;
+  conclusion: string | null;
+  event: string | null;
+  created_at: string | null;
+  run_started_at: string | null;
+  updated_at: string | null;
+}
+
 export class GitHubClient {
   private readonly octokit = new Octokit({ auth: env.GITHUB_PAT });
 
@@ -113,6 +123,29 @@ export class GitHubClient {
     } catch (e) {
       this.logger.warn({ err: e }, "failed to fetch run history");
       return err(e instanceof Error ? e : new Error(String(e)));
+    }
+  }
+
+  async fetchRunMetadata(context: GitHubRunContext): Promise<Result<WorkflowRunMetadata | null>> {
+    try {
+      const { data } = await this.octokit.actions.getWorkflowRun({
+        owner: context.owner,
+        repo: context.repo,
+        run_id: Number.parseInt(context.run_id, 10),
+      });
+
+      return ok({
+        name: data.name ?? null,
+        status: data.status ?? null,
+        conclusion: data.conclusion ?? null,
+        event: data.event ?? null,
+        created_at: data.created_at ?? null,
+        run_started_at: data.run_started_at ?? null,
+        updated_at: data.updated_at ?? null,
+      });
+    } catch (e) {
+      this.logger.warn({ err: e }, "failed to fetch run metadata");
+      return ok(null);
     }
   }
 
