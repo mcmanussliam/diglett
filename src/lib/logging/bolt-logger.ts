@@ -12,6 +12,12 @@ export const PINO_TO_BOLT_LOG_LEVEL_MAPPING: Record<PinoLogLevel, BoltLogLevel> 
   fatal: BoltLogLevel.ERROR,
 };
 
+/**
+ * Given an untyped message set, parse object params to actual objects for logging through pino.
+ *
+ * @param msg Untyped message set for parsing
+ * @returns Object and then string separate
+ */
 function parse(msg: unknown): [Record<string, unknown>, string] {
   if (msg instanceof Error) {
     return [{ err: msg }, msg.message];
@@ -28,6 +34,7 @@ function parse(msg: unknown): [Record<string, unknown>, string] {
   return [{}, msg];
 }
 
+/** Create a bolt logger using our pino logger within. */
 export function initBoltLogger(): BoltLogger {
   const state = {
     level: PINO_TO_BOLT_LOG_LEVEL_MAPPING[env.LOG_LEVEL],
