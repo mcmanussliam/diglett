@@ -3,6 +3,7 @@ import type {
   ToolResultBlockParam,
   ToolUseBlock,
 } from "@anthropic-ai/sdk/resources/messages.js";
+import { env } from "../../util/env.js";
 import { err, ok, type Result } from "../../util/result.js";
 import { anthropic, type Diagnosis } from "../integrations/anthropic.js";
 import { github, type WorkflowRunMetadata } from "../integrations/github.js";
@@ -19,7 +20,6 @@ import {
   getAvailableTools,
   getToolSchemas,
 } from "./tools/index.js";
-import { env } from "../../util/env.js";
 
 const logger = log.child({ name: "orchestrator" });
 
@@ -120,7 +120,7 @@ async function runToolRound(
   const toolResultContent: MessageParam["content"] = buildToolResults(toolUseBlocks, results);
   messages.push({
     role: "user",
-    content: Array.isArray(toolResultContent) ? toolResultContent : [toolResultContent]
+    content: Array.isArray(toolResultContent) ? toolResultContent : [toolResultContent],
   });
 
   logger.debug(

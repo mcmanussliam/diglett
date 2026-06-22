@@ -66,10 +66,10 @@ export class GitHub {
         job_id: Number.parseInt(jobId, 10),
       });
 
-      const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+      const text =
+        typeof response.data === "string" ? response.data : JSON.stringify(response.data);
       this.logger.debug({ job_id: jobId, chars: text.length }, "Job logs fetched");
       return ok(text);
-
     } catch (e) {
       this.logger.error({ err: e }, "Failed to fetch job logs");
       return err(e instanceof Error ? e : new Error(String(e)));
@@ -94,7 +94,6 @@ export class GitHub {
         message: data.commit.message.split("\n")[0] ?? "",
         changed_files: (data.files ?? []).map((f) => f.filename).slice(0, 20),
       });
-
     } catch (e) {
       this.logger.warn({ err: e }, "Failed to fetch commit info");
       return err(e instanceof Error ? e : new Error(String(e)));

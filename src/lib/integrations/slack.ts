@@ -15,11 +15,11 @@ const rtsMessageSchema = z.looseObject({
   permalink: z.string().optional(),
   ts: z.string().optional(),
   channel: z.object({ name: z.string().optional() }).optional(),
-})
+});
 
 const rtsResponseSchema = z.looseObject({
-  messages: z.object({matches: z.array(rtsMessageSchema).optional()}).optional(),
-})
+  messages: z.object({ matches: z.array(rtsMessageSchema).optional() }).optional(),
+});
 
 export class Slack {
   private readonly logger = log.child({ name: Slack.name });
@@ -42,7 +42,6 @@ export class Slack {
 
       this.logger.debug({ query, count: results.length }, "Slack rts search complete");
       return ok(results);
-
     } catch (e) {
       this.logger.warn({ err: e, query }, "Slack rts search failed");
       return err(e instanceof Error ? e : new Error(String(e)));

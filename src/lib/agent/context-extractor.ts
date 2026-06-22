@@ -10,7 +10,7 @@ export interface GitHubRunContext {
   run_url: string;
 }
 
-const logger = log.child({name: extractGitHubContext.name})
+const logger = log.child({ name: extractGitHubContext.name });
 
 const JOB_URL_RE = /github\.com\/([^/\s]+)\/([^/\s]+)\/actions\/runs\/(\d+)\/jobs\/(\d+)/;
 const RUN_URL_RE = /github\.com\/([^/\s]+)\/([^/\s]+)\/actions\/runs\/(\d+)/;
@@ -29,13 +29,13 @@ export function extractGitHubContext(text: string): GitHubRunContext | null {
 
   const match = jobMatch ?? runMatch;
   if (!match) {
-    logger.trace({text}, 'No match found in message');
+    logger.trace({ text }, "No match found in message");
     return null;
   }
 
   const [, owner, repo, run_id] = match;
   if (!owner || !repo || !run_id) {
-    logger.trace({text}, 'No `owner`, `repo` or run `run_id` found within message');
+    logger.trace({ text }, "No `owner`, `repo` or run `run_id` found within message");
     return null;
   }
 
@@ -51,7 +51,7 @@ export function extractGitHubContext(text: string): GitHubRunContext | null {
 
   logger.trace(
     { run_url: context.run_url, owner: context.owner, repo: context.repo },
-    'Successfully resolved GitHub context'
+    "Successfully resolved GitHub context",
   );
 
   return context;
