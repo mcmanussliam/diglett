@@ -26,6 +26,7 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
+  MAX_TOOL_ITERATIONS: z.coerce.number(),
 });
 
 /** Values resolved from `.env` */
