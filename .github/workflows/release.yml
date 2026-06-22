@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump to release
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Bump version, tag and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint and formatting checks
+        run: npm run ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve previous tag
+        id: previous-tag
+        run: |
+          previous_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          echo "value=$previous_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Bump package version
+        id: version
+        run: |
+          npm version "${{ inputs.bump }}" --no-git-tag-version
+          version="$(node -p "require('./package.json').version")"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release changelog
+        run: |
+          if [ -n "${{ steps.previous-tag.outputs.value }}" ]; then
+            npm run changelog -- --output RELEASE_CHANGELOG.md --range "${{ steps.previous-tag.outputs.value }}..HEAD"
+          else
+            npm run changelog -- --output RELEASE_CHANGELOG.md
+          fi
+
+      - name: Commit version bump
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore(release): v${{ steps.version.outputs.value }}"
+
+      - name: Tag release
+        run: git tag "v${{ steps.version.outputs.value }}"
+
+      - name: Push commit and tag
+        run: |
+          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "v${{ steps.version.outputs.value }}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.value }}" \
+            --title "v${{ steps.version.outputs.value }}" \
+            --notes-file RELEASE_CHANGELOG.md
