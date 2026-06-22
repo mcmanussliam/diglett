@@ -32,11 +32,8 @@ export function buildDiagnosisCard(context: GitHubRunContext, diagnosis: Diagnos
       fields: [
         { type: "mrkdwn", text: `*Root Cause*\n${root_cause}` },
         { type: "mrkdwn", text: `*Confidence*\n${confidence}` },
-      ],
-    },
-    {
-      type: "section",
-      text: { type: "mrkdwn", text: `*Suggested Fix*\n${fix_suggestion}` },
+        { type: "mrkdwn", text: `*Suggested Fix*\n${fix_suggestion}` },
+      ]
     },
   );
 
