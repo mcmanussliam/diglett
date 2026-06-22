@@ -1,5 +1,12 @@
+# npm
 node_modules/
 dist/
+
+# mac
+.DS_store
+
+# standard
 .env
 *.log
 *.db
+/tmp
